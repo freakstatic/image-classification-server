@@ -1,0 +1,16 @@
+{
+  "name": "image-classification-server",
+  "version": "1.0.0",
+  "description": "This application uses a TCP socket to receive a path of a image to analyze with the Yolo Object Detection System",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ricardo Maltez & Rúben Caceiro",
+  "license": "MIT",
+  "dependencies": {
+    "@vapi/node-yolo": "^1.0.6",
+    "socket.io": "^2.1.1"
+  }
+}
