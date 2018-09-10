@@ -5,7 +5,7 @@ const fs = require('fs');
 const yolo = require('@vapi/node-yolo');
 const detector = new yolo(__dirname + '/darknet-configs', 'cfg/coco.data', 'cfg/yolov3.cfg', 'yolov3.weights');
 const tempDir = os.tmpdir() + '/image-classification-server/';
-const max_chunk_size=1024;
+const max_chunk_size = 1024;
 let counter = -1;
 
 fs.mkdir(tempDir, 0o750, (error) =>
@@ -18,61 +18,80 @@ fs.mkdir(tempDir, 0o750, (error) =>
  const server = net.createServer(function(socket)
  {
   let state = 0;
-  let myCont=-1;
-  let file_path=tempDir;
-  let file_size=-1;
-  let file_size_left=0;
-  let write_stream=undefined;
+  let myCont = -1;
+  let file_path = tempDir;
+  let file_size = -1;
+  let timmer = undefined;
+  let write_stream = undefined;
   
   socket.on('data', function(data)
   {
    switch(state)
    {
     case 0:
-     myCont=++counter;
+     myCont = ++counter;
      file_path += counter + data;
-     state=1;
+     state = 1;
      break;
+    
     case 1:
-     file_size_left=file_size=data;
-     state=2;
-     write_stream=fs.createWriteStream(file_path,{
-      autoClose:false,
-      flags:'w',
-      mode:0o750
-     });
-     console.log('file_path:'+file_path);
-     console.log('file_size:'+file_size);
-     break;
-    case 2:
-     if(data==null||data==undefined)
-     {
-      console.log('received null data');
-      return;
-     }
+     file_size_left = file_size = parseInt(data);
+     state = 2;
      
-     if(file_size_left>max_chunk_size)
+     write_stream = fs.createWriteStream(file_path, {
+      autoClose: false,
+      flags: 'w',
+      mode: 0o750
+     });
+     write_stream.on('finish', function()
      {
-      file_size_left-=max_chunk_size;
-      write_stream.write(data);
-      console.log(file_path + ': wrote '+ file_size + ':' + file_size_left);
-     }
-     else
-     {
-      file_size_left-=file_size_left;
-      write_stream.end(data);
-      console.log(file_path + ': end '+ (file_size-file_size_left));
       detector.detect(file_path)
       .then(detections =>
       {
        let json = JSON.stringify(detections);
-       socket.write(json, 'utf8');
+       let json_size_buffer=Buffer.alloc(4,0);
+       json_size_buffer.writeInt32BE(Buffer.byteLength(json, 'utf8'),0);
+       socket.write(json_size_buffer);
+       socket.end(json, 'utf8');
       })
       .catch(error =>
       {
        console.error(error);
       });
+     });
+     
+     write_stream.on('error', function(sock_err)
+     {
+      console.error(sock_err);
+     });
+     
+     timmer = setInterval(() =>
+     {
+      if(write_stream.bytesWritten >= file_size)
+      {
+       clearInterval(timmer);
+       write_stream.end();
+       console.debug('file: ' + file_path + ' written and closed.');
+      }
+     }, 100);
+     
+     console.debug('file_path:' + file_path + '\nfile_size:' + file_size);
+     break;
+    case 2:
+     
+     if(data == null || data === undefined)
+     {
+      write_stream.end();
+      return;
      }
+     
+     write_stream.write(data, (error) =>
+     {
+      if(error !== undefined || error != null)
+      {
+       console.log(error);
+      }
+     });
      break;
    }
   });
