@@ -10,6 +10,6 @@
   "author": "Ricardo Maltez & Rúben Caceiro",
   "license": "MIT",
   "dependencies": {
-    "@vapi/node-yolo": "^1.1.2"
+    "@vapi/node-yolo": "^1.2.2"
   }
 }

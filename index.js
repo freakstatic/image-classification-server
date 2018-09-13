@@ -27,6 +27,7 @@ fs.mkdir(tempDir, 0o750, (error) =>
   let write_stream = undefined;
   let time_with_out_data = 0;
   let last_bytes_written = -1;
+  let json_with_detections = undefined;
   
   let send_an_ack = () =>
   {
@@ -47,20 +48,22 @@ fs.mkdir(tempDir, 0o750, (error) =>
   
   let delete_file = () =>
   {
-   fs.unlink(file_path, () => {});
+   fs.unlink(file_path, () =>
+   {
+   });
   };
   
   let close_writer = () =>
   {
    clearInterval(timmer);
-   timmer=undefined;
+   timmer = undefined;
    write_stream.end();
-   write_stream=undefined;
+   write_stream = undefined;
   };
- 
-  let end_socket=()=>
+  
+  let end_socket = () =>
   {
-   if(write_stream!==undefined)
+   if(write_stream !== undefined)
    {
     write_stream.off('finish', on_finish);
     close_writer();
@@ -74,21 +77,25 @@ fs.mkdir(tempDir, 0o750, (error) =>
    last_bytes_written = write_stream.bytesWritten;
    time_with_out_data = 0;
   };
- 
+  
+  let process_response = (response) =>
+  {
+   json_with_detections = JSON.stringify(response);
+   send_an_ack();
+   state = 3;
+  };
+  
   let on_finish = () =>
   {
    detector.detect(file_path)
    .then(detections =>
    {
-    let json_with_detections = JSON.stringify(detections);
-    send_a_byte(Buffer.byteLength(json_with_detections, 'utf8'));
-    socket.write(json_with_detections, 'utf8');
-    end_socket();
+    process_response(detections);
    })
    .catch(error =>
    {
-    console.error(error);
-    delete_file();
+    console.error('Error classifying image ' + file_path + ' with error code: ' + error.errorCode + ' and message: ' + error.errorMessage);
+    process_response(error);
    });
   };
   
@@ -118,7 +125,7 @@ fs.mkdir(tempDir, 0o750, (error) =>
     {
      if(time_with_out_data >= max_times_without_data)
      {
-      console.log('recall + '+file_path);
+      console.log('recall + ' + file_path);
       write_stream.off('finish', on_finish);
       close_writer();
       delete_file();
@@ -146,7 +153,7 @@ fs.mkdir(tempDir, 0o750, (error) =>
      break;
     
     case 1:
-     file_size_left = file_size = parseInt(data);
+     file_size = parseInt(data);
      state = 2;
      init_writer();
      console.debug('file_path:' + file_path + '\nfile_size:' + file_size);
@@ -162,29 +169,37 @@ fs.mkdir(tempDir, 0o750, (error) =>
      {
       if(error !== undefined || error != null)
       {
-       console.error('Error on write file: '+file_path+' : ' + error);
+       console.error('Error on write file: ' + file_path + ' : ' + error);
       }
      });
+     break;
+    case 3:
+     send_a_byte(Buffer.byteLength(json_with_detections, 'utf8'));
+     state = 4;
+     break;
+    case 4:
+     socket.write(json_with_detections, 'utf8');
+     end_socket();
      break;
    }
   });
   
-  socket.on('error',()=>
+  socket.on('error', () =>
   {
    end_socket();
    socket.destroy();
-   console.error('socket error:'+error);
+   console.error('socket error:' + error);
   });
   
-  socket.on('end',()=>
+  socket.on('end', () =>
   {
    end_socket();
   });
   
-  socket.on('timeout',()=>
+  socket.on('timeout', () =>
   {
    end_socket();
-  })
+  });
  });
  server.listen(1337, '0.0.0.0');
 });
