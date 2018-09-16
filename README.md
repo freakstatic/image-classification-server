@@ -1,5 +1,5 @@
 # image-classification-server
-This Node.js C++ server came out from a potential that we saw on [VAPi](https://github.com/freakstatic/vapi-server) project.<br>
+This project came out from a potential that we saw on [VAPi](https://github.com/freakstatic/vapi-server) project.<br>
 The potential of [Yolo](https://pjreddie.com/darknet/yolo/) to classify objects on many photos in useful time, that potential will help thousands of forensics technicians.
 
 ### Operating System Supported
