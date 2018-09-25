@@ -4,7 +4,7 @@
   "description": "This application uses a TCP socket to receive a path of a image to analyze with the Yolo Object Detection System",
   "main": "index.js",
   "scripts": {
-    "postinstall": "mkdir -p darknet-configs darknet-configs/cfg darknet-configs/data; wget -nc https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/coco.data -O darknet-configs/cfg/coco.data; wget -nc https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -O darknet-configs/cfg/yolov3.cfg; wget -nc https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O darknet-configs/data/coco.names; wget -nc https://pjreddie.com/media/files/yolov3.weights -O darknet-configs/yolov3.weights; true",
+    "postinstall": "wget -nc https://pjreddie.com/media/files/yolov3.weights -O darknet-configs/yolov3.weights; true",
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
