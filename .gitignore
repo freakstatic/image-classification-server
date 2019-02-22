@@ -62,7 +62,7 @@ typings/
 # next.js build output
 .next
 
-darknet-configs
+darknet-configs/yolov3.weights
 .idea
 package-lock.json
 
